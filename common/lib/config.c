@@ -123,10 +123,10 @@ int init_config_disk(struct volume *part) {
     if (!init_efi_app_path(&len)) {
         use_default_efi_search_path = true;
     } else {
-        if (len + sizeof("limine.conf") >= EFI_APP_PATH_LEN) {
+        if (len + sizeof("mochiboot.conf") >= EFI_APP_PATH_LEN) {
             use_default_efi_search_path = true;
         } else {
-            strcpy(efi_app_path + len, "limine.conf");
+            strcpy(efi_app_path + len, "mochiboot.conf");
         }
     }
 #endif
@@ -138,12 +138,12 @@ int init_config_disk(struct volume *part) {
     if (
      false
 #if defined (UEFI)
-     || (f = fopen(part, use_default_efi_search_path ? "/EFI/BOOT/limine.conf" : efi_app_path)) != NULL
+     || (f = fopen(part, use_default_efi_search_path ? "/EFI/BOOT/mochiboot.conf" : efi_app_path)) != NULL
 #endif
-     || (f = fopen(part, "/boot/limine/limine.conf")) != NULL
-     || (f = fopen(part, "/boot/limine.conf")) != NULL
-     || (f = fopen(part, "/limine/limine.conf")) != NULL
-     || (f = fopen(part, "/limine.conf")) != NULL
+     || (f = fopen(part, "/boot/mochiboot/mochiboot.conf")) != NULL
+     || (f = fopen(part, "/boot/mochiboot.conf")) != NULL
+     || (f = fopen(part, "/mochiboot/mochiboot.conf")) != NULL
+     || (f = fopen(part, "/mochiboot.conf")) != NULL
     ) {
         goto opened;
     }
@@ -239,8 +239,8 @@ bool init_config_smbios(void) {
             const char *string_data = (void *)((uintptr_t) hdr + hdr->length);
             size_t string_area_size = struct_size - hdr->length;
 
-            size_t prefix_len = sizeof("limine:config:") - 1;
-            if (string_area_size > prefix_len && !strncmp(string_data, "limine:config:", prefix_len)) {
+            size_t prefix_len = sizeof("mochiboot:config:") - 1;
+            if (string_area_size > prefix_len && !strncmp(string_data, "mochiboot:config:", prefix_len)) {
                 size_t total_len = strnlen(string_data, string_area_size);
                 if (total_len <= prefix_len)
                     continue;

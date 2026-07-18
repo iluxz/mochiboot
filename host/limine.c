@@ -1211,7 +1211,7 @@ bios_boot_autodetected:;
                         "          the root, /boot, /limine, or /boot/limine directories of\n"
                         "          one of the partitions on the device, or boot will fail!\n");
 
-        fprintf(stderr, "Limine BIOS stages installed successfully.\n");
+        fprintf(stderr, "MochiBoot BIOS stages installed successfully.\n");
     }
 
     ok = EXIT_SUCCESS;
@@ -1241,7 +1241,7 @@ uninstall_mode_cleanup:
 #define CONFIG_B2SUM_SIGNATURE "++CONFIG_B2SUM_SIGNATURE++"
 
 static void enroll_config_usage(void) {
-    printf("usage: %s enroll-config <Limine executable> <BLAKE2B of config file>\n", program_name);
+    printf("usage: %s enroll-config <MochiBoot executable> <BLAKE2B of config file>\n", program_name);
     printf("\n");
     printf("    --reset      Remove enrolled BLAKE2B, will not check config integrity\n");
     printf("\n");
@@ -1420,7 +1420,7 @@ static void general_usage(void) {
     printf("\n");
     printf("    --print-datadir   Print the directory containing the bootloader files\n");
     printf("\n");
-    printf("    --version         Print the Limine version (like the `version` command)\n");
+    printf("    --version         Print the MochiBoot version (like the `version` command)\n");
     printf("\n");
     printf("    --help | -h       Display this help message\n");
     printf("\n");
@@ -1455,7 +1455,7 @@ int main(int argc, char *argv[]) {
 #ifndef LIMINE_NO_BIOS
         return bios_install(argc - 1, &argv[1]);
 #else
-        fprintf(stderr, "error: Limine has been compiled without BIOS support.\n");
+        fprintf(stderr, "error: MochiBoot has been compiled without BIOS support.\n");
         return EXIT_FAILURE;
 #endif
     } else if (strcmp(argv[1], "enroll-config") == 0) {

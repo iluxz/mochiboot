@@ -57,7 +57,7 @@ noreturn void uefi_entry(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) 
                 goto new_base_gotten;
             }
         }
-        deferred_error = "Limine does not support being loaded above 4GiB and no alternative loading spot found";
+        deferred_error = "MochiBoot does not support being loaded above 4GiB and no alternative loading spot found";
         goto defer_error;
 new_base_gotten:
         memcpy((void *)new_base, __slide, (size_t)image_size);
@@ -117,10 +117,10 @@ defer_error:
         if (current_handle == NULL) {
 could_not_match:
             print("WARNING: Could not meaningfully match the boot device handle with a volume.\n");
-            print("         Using the first volume containing a Limine configuration!\n");
+            print("         Using the first volume containing a MochiBoot configuration!\n");
             print("\n");
             print("THIS IS A BUG! Please report this issue upstream.\n");
-            print("Press any key to continue...\n");
+            print("Press any key to continue booting MochiBoot...\n");
             for (;;) {
                 int ret = pit_sleep_and_quit_on_keypress(65535);
                 if (ret != 0) {
@@ -136,13 +136,13 @@ could_not_match:
                 if (
                  false
 #if defined (UEFI)
-                 || (f = fopen(volume_index[i], "/EFI/limine/limine.conf")) != NULL
-                 || (f = fopen(volume_index[i], "/EFI/BOOT/limine.conf")) != NULL
+                 || (f = fopen(volume_index[i], "/EFI/mochiboot/mochiboot.conf")) != NULL
+                 || (f = fopen(volume_index[i], "/EFI/BOOT/mochiboot.conf")) != NULL
 #endif
-                 || (f = fopen(volume_index[i], "/boot/limine/limine.conf")) != NULL
-                 || (f = fopen(volume_index[i], "/boot/limine.conf")) != NULL
-                 || (f = fopen(volume_index[i], "/limine/limine.conf")) != NULL
-                 || (f = fopen(volume_index[i], "/limine.conf")) != NULL
+                 || (f = fopen(volume_index[i], "/boot/mochiboot/mochiboot.conf")) != NULL
+                 || (f = fopen(volume_index[i], "/boot/mochiboot.conf")) != NULL
+                 || (f = fopen(volume_index[i], "/mochiboot/mochiboot.conf")) != NULL
+                 || (f = fopen(volume_index[i], "/mochiboot.conf")) != NULL
                 ) {
                     goto opened;
                 }
@@ -168,7 +168,7 @@ opened:
                 stage3_common();
             }
 
-            panic(false, "No volume contained a Limine configuration file");
+            panic(false, "No volume contained a MochiBoot configuration file");
         }
 
         EFI_GUID loaded_img_prot_guid = EFI_LOADED_IMAGE_PROTOCOL_GUID;

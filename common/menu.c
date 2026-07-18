@@ -45,7 +45,7 @@ EFI_GUID limine_efi_vendor_guid =
 
 static char interface_help_colour[24] = "\e[38;2;0;170;0m";
 static char interface_help_colour_bright[24] = "\e[38;2;85;255;85m";
-static char menu_branding_colour[24] = "\e[38;2;0;170;170m";
+static char menu_branding_colour[24] = "\e[38;2;130;80;220m";
 
 static char *menu_branding = NULL;
 
@@ -1598,9 +1598,9 @@ noreturn void _menu(bool first_run) {
         {
             uint32_t eax, ebx, ecx, edx;
             if (!cpuid(0x80000001, 0, &eax, &ebx, &ecx, &edx) || !(edx & (1 << 29))) {
-                menu_branding = strdup("Limine " LIMINE_VERSION " (ia-32, BIOS)");
+                menu_branding = strdup("MochiBoot " LIMINE_VERSION " (ia-32, BIOS)");
             } else {
-                menu_branding = strdup("Limine " LIMINE_VERSION " (x86-64, BIOS)");
+                menu_branding = strdup("MochiBoot " LIMINE_VERSION " (x86-64, BIOS)");
             }
         }
 #elif defined (UEFI)
@@ -1608,13 +1608,13 @@ noreturn void _menu(bool first_run) {
         {
             uint32_t eax, ebx, ecx, edx;
             if (!cpuid(0x80000001, 0, &eax, &ebx, &ecx, &edx) || !(edx & (1 << 29))) {
-                menu_branding = strdup("Limine " LIMINE_VERSION " (ia-32, UEFI32)");
+                menu_branding = strdup("MochiBoot " LIMINE_VERSION " (ia-32, UEFI32)");
             } else {
-                menu_branding = strdup("Limine " LIMINE_VERSION " (x86-64, UEFI32)");
+                menu_branding = strdup("MochiBoot " LIMINE_VERSION " (x86-64, UEFI32)");
             }
         }
 #else
-        menu_branding = strdup("Limine " LIMINE_VERSION " ("
+        menu_branding = strdup("MochiBoot " LIMINE_VERSION " ("
 #if defined (__x86_64__)
             "x86-64"
 #elif defined (__riscv)

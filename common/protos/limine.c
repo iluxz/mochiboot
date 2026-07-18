@@ -48,7 +48,7 @@ static enum executable_format detect_kernel_format(uint8_t *kernel, size_t kerne
     } else if (pe_bits(kernel, kernel_size) != -1) {
         return EXECUTABLE_FORMAT_PE;
     } else {
-        panic(true, "limine: Unknown kernel executable format");
+        panic(true, "mochiboot: Unknown kernel executable format");
     }
 }
 
@@ -177,7 +177,7 @@ static pagemap_t build_pagemap(int base_revision,
     pagemap_t pagemap = new_pagemap(paging_mode);
 
     if (ranges_count == 0) {
-        panic(true, "limine: ranges_count == 0");
+        panic(true, "mochiboot: ranges_count == 0");
     }
 
     for (size_t i = 0; i < ranges_count; i++) {
@@ -187,7 +187,7 @@ static pagemap_t build_pagemap(int base_revision,
         if (virt & ((uint64_t)1 << 63)) {
             phys = physical_base + (virt - virtual_base);
         } else {
-            panic(false, "limine: Virtual address of a PHDR in lower half");
+            panic(false, "mochiboot: Virtual address of a PHDR in lower half");
         }
 
         uint64_t pf =
@@ -474,7 +474,7 @@ noreturn void limine_load(char *config, char *cmdline) {
         uint64_t mmfr1;
         asm volatile ("mrs %0, id_aa64mmfr1_el1" : "=r"(mmfr1));
         if (!((mmfr1 >> 8) & 0xF)) {
-            panic(true, "limine: Booting at EL2 without VHE support is not supported");
+            panic(true, "mochiboot: Booting at EL2 without VHE support is not supported");
         }
     }
 #endif
@@ -484,10 +484,10 @@ noreturn void limine_load(char *config, char *cmdline) {
         kernel_path = config_get_value(config, 0, "KERNEL_PATH");
     }
     if (kernel_path == NULL) {
-        panic(true, "limine: Executable path not specified");
+        panic(true, "mochiboot: Executable path not specified");
     }
 
-    print("limine: Loading executable `%#`...\n", kernel_path);
+    print("mochiboot: Loading executable `%#`...\n", kernel_path);
 
     struct file_handle *kernel_file;
     if ((kernel_file = uri_open(kernel_path, MEMMAP_BOOTLOADER_RECLAIMABLE, false
@@ -495,7 +495,7 @@ noreturn void limine_load(char *config, char *cmdline) {
         , NULL, NULL
 #endif
     )) == NULL)
-        panic(true, "limine: Failed to open executable with path `%#`. Is the path correct?", kernel_path);
+        panic(true, "mochiboot: Failed to open executable with path `%#`. Is the path correct?", kernel_path);
 
     char *k_path_copy = ext_mem_alloc(strlen(kernel_path) + 1);
     strcpy(k_path_copy, kernel_path);
@@ -552,7 +552,7 @@ noreturn void limine_load(char *config, char *cmdline) {
                             &physical_base, &virtual_base, NULL,
                             &image_size_before_bss,
                             &is_reloc)) {
-                panic(true, "limine: ELF64 load failure");
+                panic(true, "mochiboot: ELF64 load failure");
             }
             break;
         case EXECUTABLE_FORMAT_PE:
@@ -562,7 +562,7 @@ noreturn void limine_load(char *config, char *cmdline) {
                             &physical_base, &virtual_base, NULL,
                             &image_size_before_bss,
                             &is_reloc)) {
-                panic(true, "limine: PE64 load failure");
+                panic(true, "mochiboot: PE64 load failure");
             }
             break;
     }
@@ -598,7 +598,7 @@ noreturn void limine_load(char *config, char *cmdline) {
 
         if (p[0] == limine_base_revision[0] && p[1] == limine_base_revision[1]) {
             if (base_revision_found) {
-                panic(true, "limine: Duplicated base revision tag");
+                panic(true, "mochiboot: Duplicated base revision tag");
             }
             base_revision_found = true;
             base_revision = p[2];
@@ -620,7 +620,7 @@ noreturn void limine_load(char *config, char *cmdline) {
 
 #if defined (__aarch64__)
     if (base_revision < 6) {
-        panic(true, "limine: Base revision %u is no longer supported for aarch64 (minimum: 6)", base_revision);
+        panic(true, "mochiboot: Base revision %u is no longer supported for aarch64 (minimum: 6)", base_revision);
     }
 #endif
 
@@ -631,14 +631,14 @@ noreturn void limine_load(char *config, char *cmdline) {
     if (base_revision == 0 && kernel_format == EXECUTABLE_FORMAT_ELF && elf64_load_section(kernel, kernel_file->size, &limine_reqs, ".limine_reqs", 0, slide)) {
         for (size_t i = 0; ; i++) {
             if (i >= MAX_REQUESTS) {
-                panic(true, "limine: Maximum requests exceeded");
+                panic(true, "mochiboot: Maximum requests exceeded");
             }
             if (limine_reqs[i] == 0) {
                 break;
             }
             if (limine_reqs[i] < virtual_base
              || limine_reqs[i] - virtual_base >= image_size_before_bss) {
-                panic(true, "limine: .limine_reqs entry outside kernel image");
+                panic(true, "mochiboot: .limine_reqs entry outside kernel image");
             }
             requests[i] = (void *)(uintptr_t)((limine_reqs[i] - virtual_base) + physical_base);
             requests_count++;
@@ -668,12 +668,12 @@ noreturn void limine_load(char *config, char *cmdline) {
             }
 
             if (requests_count == MAX_REQUESTS) {
-                panic(true, "limine: Maximum requests exceeded");
+                panic(true, "mochiboot: Maximum requests exceeded");
             }
 
             // Check for a conflict
             if (_get_request(p) != NULL) {
-                panic(true, "limine: Conflict detected for request ID %X %X", p[2], p[3]);
+                panic(true, "mochiboot: Conflict detected for request ID %X %X", p[2], p[3]);
             }
 
             requests[requests_count++] = p;
@@ -683,7 +683,7 @@ noreturn void limine_load(char *config, char *cmdline) {
 #if defined (__x86_64__) || defined (__i386__)
     // Check if 64 bit CPU
     if (!cpuid(0x80000001, 0, &eax, &ebx, &ecx, &edx) || !(edx & (1 << 29))) {
-        panic(true, "limine: This CPU does not support 64-bit mode.");
+        panic(true, "mochiboot: This CPU does not support 64-bit mode.");
     }
 #endif
 
@@ -698,20 +698,20 @@ noreturn void limine_load(char *config, char *cmdline) {
     }
 
     if (maxphyaddr > 64) {
-        panic(true, "limine: MAXPHYADDR > 64");
+        panic(true, "mochiboot: MAXPHYADDR > 64");
     }
     if (maxphyaddr < 64 && hhdm_span_top > (uint64_t)1 << maxphyaddr) {
-        panic(true, "limine: Top of HHDM exceeds maximum allowable MAXPHYADDR value");
+        panic(true, "mochiboot: Top of HHDM exceeds maximum allowable MAXPHYADDR value");
     }
 #endif
 
-    printv("limine: Physical base:   %X\n", physical_base);
-    printv("limine: Virtual base:    %X\n", virtual_base);
-    printv("limine: Slide:           %X\n", slide);
-    printv("limine: ELF entry point: %X\n", entry_point);
-    printv("limine: Base revision:   %u\n", base_revision);
-    printv("limine: Requests count:  %U\n", (uint64_t)requests_count);
-    printv("limine: Top of HHDM:     %X\n", hhdm_span_top);
+    printv("mochiboot: Physical base:   %X\n", physical_base);
+    printv("mochiboot: Virtual base:    %X\n", virtual_base);
+    printv("mochiboot: Slide:           %X\n", slide);
+    printv("mochiboot: ELF entry point: %X\n", entry_point);
+    printv("mochiboot: Base revision:   %u\n", base_revision);
+    printv("mochiboot: Requests count:  %U\n", (uint64_t)requests_count);
+    printv("mochiboot: Top of HHDM:     %X\n", hhdm_span_top);
 
     // Paging Mode
     int max_supported_paging_mode, min_supported_paging_mode;
@@ -719,7 +719,7 @@ noreturn void limine_load(char *config, char *cmdline) {
 #if defined (__x86_64__) || defined (__i386__)
     max_supported_paging_mode = PAGING_MODE_X86_64_4LVL;
     if (cpuid(0x00000007, 0, &eax, &ebx, &ecx, &edx) && (ecx & (1 << 16))) {
-        printv("limine: CPU has 5-level paging support\n");
+        printv("mochiboot: CPU has 5-level paging support\n");
         max_supported_paging_mode = PAGING_MODE_X86_64_5LVL;
     }
     min_supported_paging_mode = PAGING_MODE_X86_64_4LVL;
@@ -769,7 +769,7 @@ noreturn void limine_load(char *config, char *cmdline) {
 
     if (0) {
 hhdm_fail:
-        panic(true, "limine: Unable to allocate higher half direct map (too much memory?)");
+        panic(true, "mochiboot: Unable to allocate higher half direct map (too much memory?)");
     }
 
     char *user_paging_mode_s = config_get_value(config, 0, "PAGING_MODE");
@@ -809,7 +809,7 @@ hhdm_fail:
         }
 #endif
         else {
-            panic(true, "limine: Invalid MAX_PAGING_MODE: `%s`", user_max_paging_mode_s);
+            panic(true, "mochiboot: Invalid MAX_PAGING_MODE: `%s`", user_max_paging_mode_s);
         }
     }
 
@@ -848,23 +848,23 @@ hhdm_fail:
         }
 #endif
         else {
-            panic(true, "limine: Invalid MIN_PAGING_MODE: `%s`", user_min_paging_mode_s);
+            panic(true, "mochiboot: Invalid MIN_PAGING_MODE: `%s`", user_min_paging_mode_s);
         }
     }
 
     if (user_max_paging_mode < user_min_paging_mode) {
-        panic(true, "limine: MAX_PAGING_MODE is lower than MIN_PAGING_MODE");
+        panic(true, "mochiboot: MAX_PAGING_MODE is lower than MIN_PAGING_MODE");
     }
 
     if (user_max_paging_mode < max_supported_paging_mode) {
         if (user_max_paging_mode < min_supported_paging_mode) {
-            panic(true, "limine: User set MAX_PAGING_MODE less than minimum supported paging mode");
+            panic(true, "mochiboot: User set MAX_PAGING_MODE less than minimum supported paging mode");
         }
         max_supported_paging_mode = user_max_paging_mode;
     }
     if (user_min_paging_mode > min_supported_paging_mode) {
         if (user_min_paging_mode > max_supported_paging_mode) {
-            panic(true, "limine: User set MIN_PAGING_MODE greater than maximum supported paging mode");
+            panic(true, "mochiboot: User set MIN_PAGING_MODE greater than maximum supported paging mode");
         }
         min_supported_paging_mode = user_min_paging_mode;
     }
@@ -911,18 +911,18 @@ FEAT_START
     }
 
     if (kern_max_mode < kern_min_mode) {
-        panic(true, "limine: Executable's paging max_mode lower than min_mode");
+        panic(true, "mochiboot: Executable's paging max_mode lower than min_mode");
     }
 
     if (paging_mode > kern_max_mode) {
         if (kern_max_mode < min_supported_paging_mode) {
-            panic(true, "limine: Executable's maximum supported paging mode lower than minimum allowable paging mode");
+            panic(true, "mochiboot: Executable's maximum supported paging mode lower than minimum allowable paging mode");
         }
         paging_mode = kern_max_mode;
     }
     if (paging_mode < kern_min_mode) {
         if (kern_min_mode > max_supported_paging_mode) {
-            panic(true, "limine: Executable's minimum supported paging mode higher than maximum allowable paging mode");
+            panic(true, "mochiboot: Executable's minimum supported paging mode higher than maximum allowable paging mode");
         }
         paging_mode = kern_min_mode;
     }
@@ -973,7 +973,7 @@ FEAT_START
 
     entry_point = entrypoint_request->entry;
 
-    printv("limine: Entry point at %X\n", entry_point);
+    printv("mochiboot: Entry point at %X\n", entry_point);
 
     struct limine_entry_point_response *entrypoint_response =
         ext_mem_alloc(sizeof(struct limine_entry_point_response));
@@ -1235,7 +1235,7 @@ FEAT_START
             // Format: ["$"] + k_resource + "(" + k_root + "):" + k_path + "/" + module_path + null
             size_t total_len = (module_compressed ? 1 : 0) + k_resource_len + 1 + k_root_len + 2 + k_path_len + 1 + module_path_len + 1;
             if (total_len > 1024) {
-                panic(true, "limine: Internal module path too long");
+                panic(true, "mochiboot: Internal module path too long");
             }
 
             char *module_path_abs = ext_mem_alloc(1024);
@@ -1252,7 +1252,7 @@ FEAT_START
             module_path_abs_p += 2;
             size_t remaining_size = 1024 - (module_path_abs_p - module_path_abs);
             if (!get_absolute_path(module_path_abs_p, module_path, k_path, remaining_size)) {
-                panic(true, "limine: Internal module path too long");
+                panic(true, "mochiboot: Internal module path too long");
             }
 
             module_path = module_path_abs;
@@ -1278,7 +1278,7 @@ FEAT_START
             module_cmdline = module_cmdline ? strdup(module_cmdline) : "";
         }
 
-        print("limine: Loading module `%#`...\n", module_path);
+        print("mochiboot: Loading module `%#`...\n", module_path);
 
         struct file_handle *f;
         // On IA-32 under measured boot, refuse >4 GiB allocations: firmware's
@@ -1293,9 +1293,9 @@ FEAT_START
 #endif
         )) == NULL) {
             if (module_required) {
-                panic(true, "limine: Failed to open module with path `%#`. Is the path correct?", module_path);
+                panic(true, "mochiboot: Failed to open module with path `%#`. Is the path correct?", module_path);
             }
-            printv("limine: Warning: Non-required internal module `%#` not found\n", module_path);
+            printv("mochiboot: Warning: Non-required internal module `%#` not found\n", module_path);
             if (module_path_allocated) {
                 pmm_free(module_path, 1024);
             }
@@ -1348,12 +1348,12 @@ FEAT_START
             }
 
             if (offset < 0) {
-                panic(true, "limine: failed to find node: '%s'", fdt_strerror(offset));
+                panic(true, "mochiboot: failed to find node: '%s'", fdt_strerror(offset));
             }
 
             int ret = fdt_del_node(dtb, offset);
             if (ret < 0) {
-                panic(true, "limine: failed to delete memory node: '%s'", fdt_strerror(ret));
+                panic(true, "mochiboot: failed to delete memory node: '%s'", fdt_strerror(ret));
             }
         }
 
@@ -1387,7 +1387,7 @@ FEAT_END
         if (!memmap_alloc_range(fbs[i].framebuffer_addr,
                            (uint64_t)fbs[i].framebuffer_pitch * fbs[i].framebuffer_height,
                            MEMMAP_FRAMEBUFFER, 0, false, false, true)) {
-            panic(true, "limine: Failed to register framebuffer in memory map");
+            panic(true, "mochiboot: Failed to register framebuffer in memory map");
         }
     }
 
@@ -1428,7 +1428,7 @@ FEAT_END
             // kernel-asserted content that we must not silently shrink.
             if (memmap[j].type != MEMMAP_USABLE
              && memmap[j].type != MEMMAP_RESERVED) {
-                panic(false, "limine: Framebuffer page-level overlap with non-trimmable memory type %x", memmap[j].type);
+                panic(false, "mochiboot: Framebuffer page-level overlap with non-trimmable memory type %x", memmap[j].type);
             }
 
             // Trim the region to not overlap with the framebuffer's
@@ -1864,9 +1864,9 @@ FEAT_END
     if (get_request(LIMINE_MP_REQUEST_ID) == NULL
      && (rdmsr(0x1b) & (1 << 10))) {
         if (x2apic_disable()) {
-            printv("limine: Firmware had x2APIC enabled, reverted to xAPIC mode\n");
+            printv("mochiboot: Firmware had x2APIC enabled, reverted to xAPIC mode\n");
         } else {
-            printv("limine: Firmware has x2APIC enabled and it could not be disabled\n");
+            printv("mochiboot: Firmware has x2APIC enabled and it could not be disabled\n");
         }
     }
 #endif
@@ -1905,7 +1905,7 @@ FEAT_START
     }
 
     if (mmap_entries > MEMMAP_MAX) {
-        panic(false, "limine: Too many memmap entries");
+        panic(false, "mochiboot: Too many memmap entries");
     }
 
     for (size_t i = 0; i < mmap_entries; i++) {
