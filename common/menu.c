@@ -45,7 +45,7 @@ EFI_GUID limine_efi_vendor_guid =
 
 static char interface_help_colour[24] = "\e[38;2;0;170;0m";
 static char interface_help_colour_bright[24] = "\e[38;2;85;255;85m";
-static char menu_branding_colour[24] = "\e[38;2;130;80;220m";
+static char menu_branding_colour[24] = "\e[38;2;0;170;170m";
 
 static char *menu_branding = NULL;
 
