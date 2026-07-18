@@ -33,10 +33,6 @@
 #if defined (UEFI)
 EFI_GUID limine_efi_vendor_guid =
     { 0x513ee0d0, 0x6e43, 0xcb05, { 0xb2, 0x72, 0xf1, 0x46, 0xa2, 0xfc, 0xb8, 0x8a } };
-
-// "mochiboot" in ASCII packed into a GUID for custom EFI variables
-EFI_GUID mochiboot_efi_vendor_guid =
-    { 0x6d6f6368, 0x6962, 0x6f6f, { 0x74, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
 #endif
 
 #define EDITOR_MAX_BUFFER_SIZE 4096
@@ -1671,67 +1667,6 @@ noreturn void _menu(bool first_run) {
             if (found_entry != NULL) {
                 selected_entry = found_index;
                 has_entry = true;
-            }
-        }
-    }
-#endif
-
-#if defined (UEFI)
-    // MochiBoot boot counter: auto-recovery after 3 consecutive failed boots
-    {
-        uint32_t boot_count = 0;
-        UINTN boot_count_size = sizeof(boot_count);
-        EFI_STATUS count_status = gRT->GetVariable(L"MochiBootBootCount",
-                                                    &mochiboot_efi_vendor_guid,
-                                                    NULL,
-                                                    &boot_count_size,
-                                                    &boot_count);
-        if (!EFI_ERROR(count_status) && boot_count_size == sizeof(boot_count)) {
-            boot_count++;
-        } else {
-            boot_count = 1;
-        }
-
-        gRT->SetVariable(L"MochiBootBootCount",
-                         &mochiboot_efi_vendor_guid,
-                         EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS,
-                         sizeof(boot_count),
-                         &boot_count);
-
-        bool force_recovery = false;
-
-        {
-            uint32_t force_flag = 0;
-            UINTN force_size = sizeof(force_flag);
-            if (!EFI_ERROR(gRT->GetVariable(L"MochiBootForceRecovery",
-                                            &mochiboot_efi_vendor_guid,
-                                            NULL, &force_size, &force_flag)) &&
-                force_flag == 1) {
-                force_recovery = true;
-                gRT->SetVariable(L"MochiBootForceRecovery",
-                                 &mochiboot_efi_vendor_guid,
-                                 EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS,
-                                 0, NULL);
-            }
-        }
-
-        if (!has_entry && (boot_count >= 3 || force_recovery)) {
-            char *recovery_entry = config_get_value(NULL, 0, "MOCHIBOOT_RECOVERY_ENTRY");
-            if (recovery_entry != NULL) {
-                char recovery_path[MENU_PATH_MAX];
-                size_t len = strlen(recovery_entry);
-                if (len >= sizeof(recovery_path)) {
-                    len = sizeof(recovery_path) - 1;
-                }
-                memcpy(recovery_path, recovery_entry, len);
-                recovery_path[len] = '\0';
-                struct menu_entry *found_entry = NULL;
-                size_t found_index = 0;
-                find_entry_by_path(recovery_path, menu_tree, 0, &found_entry, &found_index, true);
-                if (found_entry != NULL) {
-                    selected_entry = found_index;
-                    has_entry = true;
-                }
             }
         }
     }
